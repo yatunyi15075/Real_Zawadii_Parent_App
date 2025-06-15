@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../models/notification.dart';
 import '../widgets/nav_bar.dart';
+import '../screens/settings_screen.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -59,10 +60,18 @@ class NotificationsScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.settings_outlined),
-                    onPressed: () {},
-                  ),
+                            IconButton(
+                              icon: const Icon(Icons.settings_outlined, color: Colors.black),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SettingsScreen(),
+                                  ),
+                                );
+                              },
+                              tooltip: 'Settings',
+                            ),
                 ],
               ),
               const SizedBox(height: 16),

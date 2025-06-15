@@ -1,6 +1,15 @@
 // screens/settings_screen.dart
 import 'package:flutter/material.dart';
 import '../widgets/nav_bar.dart';
+import '../screens/profile_screen.dart';
+import '../screens/security_screen.dart';
+import '../screens/notifications_screen.dart';
+import '../screens/language_screen.dart';
+import '../screens/theme_screen.dart';
+import '../screens/privacy_screen.dart';
+import '../screens/help_center_screen.dart';
+import '../screens/about_screen.dart';
+import '../screens/feedback_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -23,21 +32,42 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.person_outline,
             title: 'Profile Information',
             subtitle: 'Change your personal information',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
+            },
           ),
           _buildSettingItem(
             context: context,
             icon: Icons.lock_outline,
             title: 'Security',
             subtitle: 'Change password and security settings',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SecurityScreen(),
+                ),
+              );
+            },
           ),
           _buildSettingItem(
             context: context,
             icon: Icons.notifications_outlined,
             title: 'Notifications',
             subtitle: 'Configure your notification preferences',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           _buildSectionHeader('App Settings'),
@@ -46,21 +76,42 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.language,
             title: 'Language',
             subtitle: 'English (US)',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LanguageScreen(),
+                ),
+              );
+            },
           ),
           _buildSettingItem(
             context: context,
             icon: Icons.dark_mode_outlined,
             title: 'Theme',
             subtitle: 'Light',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ThemeScreen(),
+                ),
+              );
+            },
           ),
           _buildSettingItem(
             context: context,
             icon: Icons.privacy_tip_outlined,
             title: 'Privacy',
             subtitle: 'Manage your data and privacy settings',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PrivacyScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           _buildSectionHeader('Support'),
@@ -69,27 +120,50 @@ class SettingsScreen extends StatelessWidget {
             icon: Icons.help_outline,
             title: 'Help Center',
             subtitle: 'Get help with the Parent Portal app',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HelpCenterScreen(),
+                ),
+              );
+            },
           ),
           _buildSettingItem(
             context: context,
             icon: Icons.feedback_outlined,
             title: 'Send Feedback',
             subtitle: 'Help us improve the app',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FeedbackSettingsScreen(),  
+                ),
+              );
+            },
           ),
           _buildSettingItem(
             context: context,
             icon: Icons.info_outline,
             title: 'About',
             subtitle: 'Version 1.0.0',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AboutScreen(),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                _showSignOutDialog(context);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red.shade50,
                 foregroundColor: Colors.red,
@@ -161,6 +235,36 @@ class SettingsScreen extends StatelessWidget {
         color: Colors.grey,
       ),
       onTap: onTap,
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Sign Out'),
+          content: const Text('Are you sure you want to sign out?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Signed out successfully')),
+                );
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Sign Out'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
