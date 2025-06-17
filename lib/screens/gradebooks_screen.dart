@@ -89,6 +89,7 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Column(
           children: [
@@ -112,58 +113,133 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Gradebooks',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF667EEA).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.analytics_outlined,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Academic Reports',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E293B),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Track your performance across terms',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.blue.shade50, Colors.blue.shade100],
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF1F5F9), Color(0xFFE2E8F0)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
+              ),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade500,
-                    borderRadius: BorderRadius.circular(8),
+                    color: const Color(0xFF3B82F6),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF3B82F6).withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const Icon(Icons.school, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.school_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
-                const SizedBox(width: 12),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Grade 3',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Grade 3 • Class of 2025',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          color: Color(0xFF1E293B),
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Academic Performance Overview',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
+                      SizedBox(height: 4),
+                      Text(
+                        'Comprehensive academic performance overview',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -175,28 +251,60 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
 
   Widget _buildTabBar() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: Colors.blue.shade500,
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF64748B).withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.grey.shade600,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        labelColor: const Color(0xFF1E293B),
+        unselectedLabelColor: const Color(0xFF64748B),
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 15,
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
         tabs: const [
           Tab(
-            icon: Icon(Icons.calendar_month),
-            text: 'Termly Results',
+            height: 48,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.calendar_view_month_outlined, size: 20),
+                SizedBox(width: 8),
+                Text('Termly'),
+              ],
+            ),
           ),
           Tab(
-            icon: Icon(Icons.calendar_today),
-            text: 'Yearly Results',
+            height: 48,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.calendar_today_outlined, size: 20),
+                SizedBox(width: 8),
+                Text('Annual'),
+              ],
+            ),
           ),
         ],
       ),
@@ -209,11 +317,12 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
         _buildTermlyFilters(),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             child: _buildGradebookSection(
-              'Term $selectedTerm Results - $selectedYear',
-              Icons.calendar_month,
-              Colors.green,
+              '$selectedTerm Results',
+              selectedYear,
+              Icons.calendar_view_month_outlined,
+              const Color(0xFF059669),
               _getTermlyResults(),
             ),
           ),
@@ -228,11 +337,12 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
         _buildYearlyFilters(),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             child: _buildGradebookSection(
-              'Annual Results - $selectedYear',
-              Icons.calendar_today,
-              Colors.purple,
+              'Annual Results',
+              selectedYear,
+              Icons.calendar_today_outlined,
+              const Color(0xFF7C3AED),
               _getYearlyResults(),
             ),
           ),
@@ -243,23 +353,25 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
 
   Widget _buildTermlyFilters() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
       child: Row(
         children: [
           Expanded(
             child: _buildFilterDropdown(
-              'Term',
+              'Select Term',
               selectedTerm,
               terms,
+              Icons.calendar_view_month_outlined,
               (value) => setState(() => selectedTerm = value!),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: _buildFilterDropdown(
               'Academic Year',
               selectedYear,
               years,
+              Icons.school_outlined,
               (value) => setState(() => selectedYear = value!),
             ),
           ),
@@ -270,11 +382,12 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
 
   Widget _buildYearlyFilters() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
       child: _buildFilterDropdown(
         'Academic Year',
         selectedYear,
         years,
+        Icons.school_outlined,
         (value) => setState(() => selectedYear = value!),
       ),
     );
@@ -284,20 +397,20 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
     String label,
     String value,
     List<String> items,
+    IconData icon,
     void Function(String?) onChanged,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
+            color: const Color(0xFF64748B).withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -305,20 +418,39 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade600),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Color(0xFF64748B),
+            size: 20,
+          ),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF1E293B),
+          ),
           items: items.map((String item) {
             return DropdownMenuItem<String>(
               value: item,
-              child: Text(
-                item,
-                style: const TextStyle(fontSize: 14),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: const Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(item),
+                ],
               ),
             );
           }).toList(),
           onChanged: onChanged,
           hint: Text(
             label,
-            style: TextStyle(color: Colors.grey.shade600),
+            style: const TextStyle(
+              color: Color(0xFF94A3B8),
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ),
       ),
@@ -333,7 +465,13 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
     return yearlyResults[selectedYear] ?? [];
   }
 
-  Widget _buildGradebookSection(String title, IconData icon, Color color, List<Map<String, String>> results) {
+  Widget _buildGradebookSection(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color accentColor,
+    List<Map<String, String>> results,
+  ) {
     if (results.isEmpty) {
       return _buildEmptyState();
     }
@@ -341,56 +479,97 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: const Color(0xFF64748B).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              gradient: LinearGradient(
+                colors: [
+                  accentColor.withOpacity(0.05),
+                  accentColor.withOpacity(0.02),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
             ),
             child: Row(
               children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: accentColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                _buildAverageScore(results),
+                _buildAverageScore(results, accentColor),
               ],
             ),
           ),
+          _buildResultsHeader(),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: results.length,
-            separatorBuilder: (context, index) => Divider(color: Colors.grey.shade200, height: 1),
+            separatorBuilder: (context, index) => const Divider(
+              color: Color(0xFFF1F5F9),
+              height: 1,
+              thickness: 1,
+            ),
             itemBuilder: (context, index) {
               final result = results[index];
               return _buildGradebookRow(
                 result['subject']!,
                 result['score']!,
                 result['grade']!,
+                index == results.length - 1,
               );
             },
           ),
@@ -399,7 +578,61 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildAverageScore(List<Map<String, String>> results) {
+  Widget _buildResultsHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8FAFC),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        ),
+      ),
+      child: const Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              'Subject',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF475569),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              'Score',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF475569),
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Text(
+              'Grade',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF475569),
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAverageScore(List<Map<String, String>> results, Color accentColor) {
     if (results.isEmpty) return const SizedBox.shrink();
     
     double total = 0;
@@ -409,48 +642,83 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
     double average = total / results.length;
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accentColor.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Text(
-        'Avg: ${average.toStringAsFixed(1)}%',
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Column(
+        children: [
+          Text(
+            '${average.toStringAsFixed(1)}%',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: accentColor,
+            ),
+          ),
+          const Text(
+            'Average',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.all(40),
+      margin: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(48),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.inbox_outlined,
-            size: 64,
-            color: Colors.grey.shade400,
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(
+              Icons.inbox_outlined,
+              size: 48,
+              color: Color(0xFF94A3B8),
+            ),
           ),
-          const SizedBox(height: 16),
-          Text(
+          const SizedBox(height: 24),
+          const Text(
             'No Results Available',
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF475569),
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Results for the selected period are not yet available.',
+          const Text(
+            'Results for the selected period are not yet available.\nPlease check back later or contact your teacher.',
             style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
+              fontSize: 15,
+              color: Color(0xFF64748B),
+              height: 1.5,
             ),
             textAlign: TextAlign.center,
           ),
@@ -459,21 +727,43 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildGradebookRow(String subject, String score, String grade) {
+  Widget _buildGradebookRow(String subject, String score, String grade, bool isLast) {
     Color gradeColor = _getGradeColor(grade);
     
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: isLast ? const BorderRadius.only(
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ) : null,
+      ),
       child: Row(
         children: [
           Expanded(
             flex: 3,
-            child: Text(
-              subject,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: gradeColor.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    subject,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -482,28 +772,34 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
               '$score%',
               style: const TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF374151),
               ),
               textAlign: TextAlign.center,
             ),
           ),
           Expanded(
             flex: 1,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              decoration: BoxDecoration(
-                color: gradeColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: gradeColor.withOpacity(0.3)),
-              ),
-              child: Text(
-                grade,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: gradeColor,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: gradeColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: gradeColor.withOpacity(0.3),
+                    width: 1.5,
+                  ),
                 ),
-                textAlign: TextAlign.center,
+                child: Text(
+                  grade,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: gradeColor,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ),
             ),
           ),
@@ -515,18 +811,18 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
   Color _getGradeColor(String grade) {
     switch (grade) {
       case 'A':
-        return Colors.green;
+        return const Color(0xFF059669);
       case 'B+':
       case 'B':
-        return Colors.blue;
+        return const Color(0xFF3B82F6);
       case 'C+':
       case 'C':
-        return Colors.orange;
+        return const Color(0xFFF59E0B);
       case 'D':
       case 'E':
-        return Colors.red;
+        return const Color(0xFFEF4444);
       default:
-        return Colors.grey;
+        return const Color(0xFF6B7280);
     }
   }
 }

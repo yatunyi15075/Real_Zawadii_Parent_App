@@ -9,105 +9,191 @@ class AttendanceScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Sample attendance data
     final attendanceData = [
-      {'date': 'May 20, 2025', 'status': 'Present', 'icon': Icons.check_circle, 'color': Colors.green},
-      {'date': 'May 19, 2025', 'status': 'Present', 'icon': Icons.check_circle, 'color': Colors.green},
-      {'date': 'May 18, 2025', 'status': 'Absent', 'icon': Icons.cancel, 'color': Colors.red},
-      {'date': 'May 17, 2025', 'status': 'Present', 'icon': Icons.check_circle, 'color': Colors.green},
-      {'date': 'May 16, 2025', 'status': 'Late', 'icon': Icons.access_time, 'color': Colors.orange},
-      {'date': 'May 15, 2025', 'status': 'Present', 'icon': Icons.check_circle, 'color': Colors.green},
-      {'date': 'May 14, 2025', 'status': 'Present', 'icon': Icons.check_circle, 'color': Colors.green},
+      {'date': 'May 20, 2025', 'status': 'Present', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF10B981)},
+      {'date': 'May 19, 2025', 'status': 'Present', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF10B981)},
+      {'date': 'May 18, 2025', 'status': 'Absent', 'icon': Icons.cancel_rounded, 'color': const Color(0xFFEF4444)},
+      {'date': 'May 17, 2025', 'status': 'Present', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF10B981)},
+      {'date': 'May 16, 2025', 'status': 'Late', 'icon': Icons.access_time_rounded, 'color': const Color(0xFFF59E0B)},
+      {'date': 'May 15, 2025', 'status': 'Present', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF10B981)},
+      {'date': 'May 14, 2025', 'status': 'Present', 'icon': Icons.check_circle_rounded, 'color': const Color(0xFF10B981)},
     ];
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Attendance',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.calendar_today, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Term 2',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
+                    const Text(
+                      'Attendance',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withOpacity(0.2),
+                          width: 1,
                         ),
-                        Text(
-                          '2024-2025 Academic Year',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
+                      ),
+                      child: const Text(
+                        'Active',
+                        style: TextStyle(
+                          color: Color(0xFF10B981),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildAttendanceSummary('Present', '85%', Colors.green),
-                  _buildAttendanceSummary('Late', '10%', Colors.orange),
-                  _buildAttendanceSummary('Absent', '5%', Colors.red),
-                ],
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Recent Attendance',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: attendanceData.length,
-                  itemBuilder: (context, index) {
-                    final data = attendanceData[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: Icon(
-                          data['icon'] as IconData,
-                          color: data['color'] as Color,
+                const SizedBox(height: 24),
+
+                // Term Info Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF6366F1).withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        title: Text(data['date'] as String),
-                        trailing: Text(
-                          data['status'] as String,
-                          style: TextStyle(
-                            color: data['color'] as Color,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: const Icon(
+                          Icons.calendar_today_rounded,
+                          color: Colors.white,
+                          size: 24,
                         ),
                       ),
-                    );
-                  },
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Term 2',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              '2024-2025 Academic Year',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 28),
+
+                // Attendance Summary Cards
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildModernAttendanceSummary(
+                        'Present', 
+                        '85%', 
+                        const Color(0xFF10B981),
+                        Icons.trending_up_rounded,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildModernAttendanceSummary(
+                        'Late', 
+                        '10%', 
+                        const Color(0xFFF59E0B),
+                        Icons.access_time_rounded,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildModernAttendanceSummary(
+                        'Absent', 
+                        '5%', 
+                        const Color(0xFFEF4444),
+                        Icons.trending_down_rounded,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+
+                // Recent Attendance Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Recent Attendance',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(
+                        Icons.filter_list_rounded,
+                        size: 18,
+                        color: Color(0xFF6366F1),
+                      ),
+                      label: const Text(
+                        'Filter',
+                        style: TextStyle(
+                          color: Color(0xFF6366F1),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Attendance List
+                ...attendanceData.map((data) => _buildModernAttendanceItem(data)).toList(),
+                const SizedBox(height: 80), // Space for bottom navigation
+              ],
+            ),
           ),
         ),
       ),
@@ -115,36 +201,140 @@ class AttendanceScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAttendanceSummary(String label, String percentage, Color color) {
-    return Column(
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
+  Widget _buildModernAttendanceSummary(String label, String percentage, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          child: Center(
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            percentage,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernAttendanceItem(Map<String, dynamic> data) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: (data['color'] as Color).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              data['icon'] as IconData,
+              color: data['color'] as Color,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data['date'] as String,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _getStatusDescription(data['status'] as String),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: (data['color'] as Color).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Text(
-              percentage,
+              data['status'] as String,
               style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+                color: data['color'] as Color,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  String _getStatusDescription(String status) {
+    switch (status) {
+      case 'Present':
+        return 'On time arrival';
+      case 'Late':
+        return 'Arrived after start time';
+      case 'Absent':
+        return 'Did not attend';
+      default:
+        return '';
+    }
   }
 }
