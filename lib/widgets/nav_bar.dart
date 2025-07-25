@@ -248,10 +248,10 @@ class NavBar extends StatelessWidget {
           return 'Grades';
         case 'Assessments':
           return 'Tests';
-        case 'Notifications':
-          return 'Alerts';
         case 'Attendance':
           return 'Attend';
+        case 'Notifications':
+          return 'Alerts';
         default:
           return label;
       }

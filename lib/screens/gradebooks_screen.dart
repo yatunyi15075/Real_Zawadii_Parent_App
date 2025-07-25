@@ -1,5 +1,8 @@
 // screens/gradebooks_screen.dart
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/nav_bar.dart';
 
 class GradebooksScreen extends StatefulWidget {
@@ -14,76 +17,258 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
   
   // Filter states
   String selectedTerm = 'Term 1';
-  String selectedYear = '2024-2025';
+  String selectedYear = '2024';
   
   final List<String> terms = ['Term 1', 'Term 2', 'Term 3'];
-  final List<String> years = ['2024-2025', '2023-2024', '2022-2023'];
+  final List<String> years = ['2024', '2023', '2022'];
 
-  // Sample data - in real app this would come from API/database
-  final Map<String, Map<String, List<Map<String, String>>>> termlyResults = {
-    'Term 1': {
-      '2024-2025': [
-        {'subject': 'Mathematics', 'score': '85', 'grade': 'A'},
-        {'subject': 'English', 'score': '78', 'grade': 'B+'},
-        {'subject': 'Science', 'score': '92', 'grade': 'A'},
-        {'subject': 'Social Studies', 'score': '76', 'grade': 'B'},
-        {'subject': 'Kiswahili', 'score': '88', 'grade': 'A'},
-      ],
-      '2023-2024': [
-        {'subject': 'Mathematics', 'score': '82', 'grade': 'A'},
-        {'subject': 'English', 'score': '75', 'grade': 'B'},
-        {'subject': 'Science', 'score': '89', 'grade': 'A'},
-        {'subject': 'Social Studies', 'score': '73', 'grade': 'B'},
-        {'subject': 'Kiswahili', 'score': '85', 'grade': 'A'},
-      ],
-    },
-    'Term 2': {
-      '2024-2025': [
-        {'subject': 'Mathematics', 'score': '87', 'grade': 'A'},
-        {'subject': 'English', 'score': '80', 'grade': 'A'},
-        {'subject': 'Science', 'score': '94', 'grade': 'A'},
-        {'subject': 'Social Studies', 'score': '78', 'grade': 'B+'},
-        {'subject': 'Kiswahili', 'score': '90', 'grade': 'A'},
-      ],
-    },
-    'Term 3': {
-      '2024-2025': [
-        {'subject': 'Mathematics', 'score': '89', 'grade': 'A'},
-        {'subject': 'English', 'score': '82', 'grade': 'A'},
-        {'subject': 'Science', 'score': '96', 'grade': 'A'},
-        {'subject': 'Social Studies', 'score': '80', 'grade': 'A'},
-        {'subject': 'Kiswahili', 'score': '92', 'grade': 'A'},
-      ],
-    },
-  };
+  // API data
+  List<Map<String, dynamic>> reports = [];
+  Map<String, String> students = {};
+  Map<String, String> schools = {};
+  bool isLoading = true;
+  String? error;
 
-  final Map<String, List<Map<String, String>>> yearlyResults = {
-    '2024-2025': [
-      {'subject': 'Mathematics', 'score': '87', 'grade': 'A'},
-      {'subject': 'English', 'score': '80', 'grade': 'A'},
-      {'subject': 'Science', 'score': '94', 'grade': 'A'},
-      {'subject': 'Social Studies', 'score': '78', 'grade': 'B+'},
-      {'subject': 'Kiswahili', 'score': '90', 'grade': 'A'},
-    ],
-    '2023-2024': [
-      {'subject': 'Mathematics', 'score': '83', 'grade': 'A'},
-      {'subject': 'English', 'score': '77', 'grade': 'B+'},
-      {'subject': 'Science', 'score': '91', 'grade': 'A'},
-      {'subject': 'Social Studies', 'score': '75', 'grade': 'B'},
-      {'subject': 'Kiswahili', 'score': '86', 'grade': 'A'},
-    ],
-  };
+  // Add your backend URL here - same as web app
+  static const String baseUrl = 'https://zawadi-project.onrender.com'; // Replace with your actual backend URL
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _fetchReports();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
+  }
+
+  Future<void> _fetchReports() async {
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
+
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        setState(() {
+          error = 'No authentication token found';
+          isLoading = false;
+        });
+        return;
+      }
+
+      // Fetch termly reports with term filter if needed
+      String apiUrl = '$baseUrl/api/termly-gradebook-reports';
+      if (selectedTerm.isNotEmpty) {
+        apiUrl += '?term=${Uri.encodeComponent(selectedTerm)}';
+      }
+
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> reportsData = json.decode(response.body);
+        
+        // Extract unique student and school IDs for additional data fetching
+        final studentIds = <String>{};
+        final schoolIds = <String>{};
+        
+        for (var report in reportsData) {
+          if (report['studentId'] != null) {
+            studentIds.add(report['studentId'].toString());
+          }
+          if (report['schoolId'] != null) {
+            schoolIds.add(report['schoolId'].toString());
+          }
+        }
+
+        // Fetch student data if needed
+        if (studentIds.isNotEmpty) {
+          await _fetchStudentData(studentIds, token);
+        }
+
+        // Fetch school data if needed
+        if (schoolIds.isNotEmpty) {
+          await _fetchSchoolData(schoolIds, token);
+        }
+
+        setState(() {
+          reports = reportsData.cast<Map<String, dynamic>>();
+          isLoading = false;
+        });
+      } else if (response.statusCode == 401) {
+        setState(() {
+          error = 'Session expired. Please log in again.';
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          error = 'Failed to load grade data. Please try again later.';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Network error: $e');
+      setState(() {
+        error = 'Network error. Please check your connection.';
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchStudentData(Set<String> studentIds, String token) async {
+    try {
+      final studentResponse = await http.get(
+        Uri.parse('$baseUrl/api/students?ids=${studentIds.join(',')}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (studentResponse.statusCode == 200) {
+        final List<dynamic> studentsData = json.decode(studentResponse.body);
+        final Map<String, String> studentMap = {};
+        for (var student in studentsData) {
+          studentMap[student['id'].toString()] = student['name'] ?? 'Unknown Student';
+        }
+        students = studentMap;
+      }
+    } catch (e) {
+      print('Error fetching students: $e');
+    }
+  }
+
+  Future<void> _fetchSchoolData(Set<String> schoolIds, String token) async {
+    try {
+      final schoolResponse = await http.get(
+        Uri.parse('$baseUrl/api/schools?ids=${schoolIds.join(',')}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (schoolResponse.statusCode == 200) {
+        final List<dynamic> schoolsData = json.decode(schoolResponse.body);
+        final Map<String, String> schoolMap = {};
+        for (var school in schoolsData) {
+          schoolMap[school['id'].toString()] = school['name'] ?? 'Unknown School';
+        }
+        schools = schoolMap;
+      }
+    } catch (e) {
+      print('Error fetching schools: $e');
+    }
+  }
+
+  Map<String, dynamic>? _getSelectedReport() {
+    if (reports.isEmpty) return null;
+    
+    final termReports = reports.where((report) => 
+      report['term'] == selectedTerm && 
+      report['year'].toString() == selectedYear
+    ).toList();
+    
+    return termReports.isNotEmpty ? termReports.first : null;
+  }
+
+  List<Map<String, dynamic>> _getSubjectsFromReport(Map<String, dynamic> report) {
+    final subjects = report['subjects'];
+    if (subjects == null) return [];
+
+    List<Map<String, dynamic>> subjectList = [];
+    
+    try {
+      Map<String, dynamic> subjectsData;
+      if (subjects is String) {
+        subjectsData = json.decode(subjects);
+      } else {
+        subjectsData = subjects;
+      }
+
+      subjectsData.forEach((name, subjectInfo) {
+        final competencies = <Map<String, dynamic>>[];
+        
+        // Handle different possible structures of subject data
+        dynamic score;
+        dynamic remarks;
+        
+        if (subjectInfo is Map) {
+          score = subjectInfo['score'] ?? subjectInfo['grade'] ?? 0;
+          remarks = subjectInfo['remarks'] ?? subjectInfo['comment'] ?? '';
+        } else {
+          score = subjectInfo;
+          remarks = '';
+        }
+        
+        if (score != null) {
+          competencies.add({
+            'area': 'Overall Score',
+            'grade': score.toString(),
+            'comment': remarks.toString()
+          });
+        }
+        
+        subjectList.add({
+          'name': name,
+          'score': score?.toString() ?? '0',
+          'grade': _getGradeFromScore(score?.toString() ?? '0'),
+          'competencies': competencies
+        });
+      });
+    } catch (e) {
+      print('Error parsing subjects: $e');
+      
+      // Fallback: if subjects is a simple structure, handle it differently
+      if (subjects is Map) {
+        subjects.forEach((name, value) {
+          subjectList.add({
+            'name': name.toString(),
+            'score': value.toString(),
+            'grade': _getGradeFromScore(value.toString()),
+            'competencies': []
+          });
+        });
+      }
+    }
+
+    return subjectList;
+  }
+
+  String _getGradeFromScore(String scoreStr) {
+    final score = double.tryParse(scoreStr) ?? 0;
+    if (score >= 90) return 'A';
+    if (score >= 80) return 'B+';
+    if (score >= 70) return 'B';
+    if (score >= 60) return 'C+';
+    if (score >= 50) return 'C';
+    if (score >= 40) return 'D';
+    return 'F';
+  }
+
+  String _getStudentName(String? studentId) {
+    if (studentId == null) return 'Unknown Student';
+    return students[studentId] ?? 'Student ID: $studentId';
+  }
+
+  String _getSchoolName(String? schoolId) {
+    if (schoolId == null) return 'Unknown School';
+    return schools[schoolId] ?? 'School ID: $schoolId';
   }
 
   @override
@@ -217,20 +402,20 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Grade 3 • Class of 2025',
-                        style: TextStyle(
+                        reports.isNotEmpty ? _getSchoolName(reports.first['schoolId']?.toString()) : 'Loading...',
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 18,
                           color: Color(0xFF1E293B),
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 4),
+                      const Text(
                         'Comprehensive academic performance overview',
                         style: TextStyle(
                           fontSize: 14,
@@ -312,19 +497,70 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
   }
 
   Widget _buildTermlyTab() {
+    if (isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Loading grade book data...',
+              style: TextStyle(
+                fontSize: 16,
+                color: Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error!,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Color(0xFF64748B),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _fetchReports,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         _buildTermlyFilters(),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: _buildGradebookSection(
-              '$selectedTerm Results',
-              selectedYear,
-              Icons.calendar_view_month_outlined,
-              const Color(0xFF059669),
-              _getTermlyResults(),
-            ),
+            child: _buildGradebookSection(),
           ),
         ),
       ],
@@ -332,23 +568,9 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
   }
 
   Widget _buildYearlyTab() {
-    return Column(
-      children: [
-        _buildYearlyFilters(),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: _buildGradebookSection(
-              'Annual Results',
-              selectedYear,
-              Icons.calendar_today_outlined,
-              const Color(0xFF7C3AED),
-              _getYearlyResults(),
-            ),
-          ),
-        ),
-      ],
-    );
+    // For now, showing the same data as termly
+    // You can modify this to show yearly aggregated data
+    return _buildTermlyTab();
   }
 
   Widget _buildTermlyFilters() {
@@ -362,7 +584,10 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
               selectedTerm,
               terms,
               Icons.calendar_view_month_outlined,
-              (value) => setState(() => selectedTerm = value!),
+              (value) {
+                setState(() => selectedTerm = value!);
+                _fetchReports(); // Refresh data when term changes
+              },
             ),
           ),
           const SizedBox(width: 16),
@@ -372,23 +597,13 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
               selectedYear,
               years,
               Icons.school_outlined,
-              (value) => setState(() => selectedYear = value!),
+              (value) {
+                setState(() => selectedYear = value!);
+                // You might want to refresh data here too if your backend supports year filtering
+              },
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildYearlyFilters() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-      child: _buildFilterDropdown(
-        'Academic Year',
-        selectedYear,
-        years,
-        Icons.school_outlined,
-        (value) => setState(() => selectedYear = value!),
       ),
     );
   }
@@ -457,22 +672,16 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
     );
   }
 
-  List<Map<String, String>> _getTermlyResults() {
-    return termlyResults[selectedTerm]?[selectedYear] ?? [];
-  }
+  Widget _buildGradebookSection() {
+    final selectedReport = _getSelectedReport();
+    
+    if (selectedReport == null) {
+      return _buildEmptyState();
+    }
 
-  List<Map<String, String>> _getYearlyResults() {
-    return yearlyResults[selectedYear] ?? [];
-  }
-
-  Widget _buildGradebookSection(
-    String title,
-    String subtitle,
-    IconData icon,
-    Color accentColor,
-    List<Map<String, String>> results,
-  ) {
-    if (results.isEmpty) {
+    final subjects = _getSubjectsFromReport(selectedReport);
+    
+    if (subjects.isEmpty) {
       return _buildEmptyState();
     }
 
@@ -496,8 +705,8 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  accentColor.withOpacity(0.05),
-                  accentColor.withOpacity(0.02),
+                  const Color(0xFF059669).withOpacity(0.05),
+                  const Color(0xFF059669).withOpacity(0.02),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -512,17 +721,21 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: accentColor,
+                    color: const Color(0xFF059669),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: accentColor.withOpacity(0.3),
+                        color: const Color(0xFF059669).withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: Icon(icon, color: Colors.white, size: 24),
+                  child: const Icon(
+                    Icons.calendar_view_month_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -530,16 +743,16 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
-                        style: TextStyle(
+                        '$selectedTerm Results',
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          color: accentColor,
+                          color: Color(0xFF059669),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        subtitle,
+                        '${selectedReport['year']} - ${_getStudentName(selectedReport['studentId']?.toString())}',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Color(0xFF64748B),
@@ -549,7 +762,7 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
                     ],
                   ),
                 ),
-                _buildAverageScore(results, accentColor),
+                _buildAverageScore(subjects, const Color(0xFF059669)),
               ],
             ),
           ),
@@ -557,19 +770,19 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: results.length,
+            itemCount: subjects.length,
             separatorBuilder: (context, index) => const Divider(
               color: Color(0xFFF1F5F9),
               height: 1,
               thickness: 1,
             ),
             itemBuilder: (context, index) {
-              final result = results[index];
+              final subject = subjects[index];
               return _buildGradebookRow(
-                result['subject']!,
-                result['score']!,
-                result['grade']!,
-                index == results.length - 1,
+                subject['name'],
+                subject['score'],
+                subject['grade'],
+                index == subjects.length - 1,
               );
             },
           ),
@@ -632,14 +845,21 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildAverageScore(List<Map<String, String>> results, Color accentColor) {
-    if (results.isEmpty) return const SizedBox.shrink();
+  Widget _buildAverageScore(List<Map<String, dynamic>> subjects, Color accentColor) {
+    if (subjects.isEmpty) return const SizedBox.shrink();
     
     double total = 0;
-    for (var result in results) {
-      total += double.tryParse(result['score']!) ?? 0;
+    int validSubjects = 0;
+    
+    for (var subject in subjects) {
+      final score = double.tryParse(subject['score'].toString());
+      if (score != null && score > 0) {
+        total += score;
+        validSubjects++;
+      }
     }
-    double average = total / results.length;
+    
+    double average = validSubjects > 0 ? total / validSubjects : 0;
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -713,9 +933,9 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Results for the selected period are not yet available.\nPlease check back later or contact your teacher.',
-            style: TextStyle(
+          Text(
+            'Results for $selectedTerm $selectedYear are not yet available.\nPlease check back later or contact your teacher.',
+            style: const TextStyle(
               fontSize: 15,
               color: Color(0xFF64748B),
               height: 1.5,
@@ -780,26 +1000,24 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
           ),
           Expanded(
             flex: 1,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: gradeColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: gradeColor.withOpacity(0.3),
-                    width: 1.5,
-                  ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: gradeColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: gradeColor.withOpacity(0.3),
+                  width: 1,
                 ),
-                child: Text(
-                  grade,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: gradeColor,
-                    letterSpacing: 0.5,
-                  ),
+              ),
+              child: Text(
+                grade,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: gradeColor,
                 ),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -809,20 +1027,21 @@ class _GradebooksScreenState extends State<GradebooksScreen> with SingleTickerPr
   }
 
   Color _getGradeColor(String grade) {
-    switch (grade) {
+    switch (grade.toUpperCase()) {
       case 'A':
-        return const Color(0xFF059669);
+        return const Color(0xFF059669); // Green
       case 'B+':
       case 'B':
-        return const Color(0xFF3B82F6);
+        return const Color(0xFF0891B2); // Blue
       case 'C+':
       case 'C':
-        return const Color(0xFFF59E0B);
+        return const Color(0xFFCA8A04); // Yellow
       case 'D':
-      case 'E':
-        return const Color(0xFFEF4444);
+        return const Color(0xFFEA580C); // Orange
+      case 'F':
+        return const Color(0xFFDC2626); // Red
       default:
-        return const Color(0xFF6B7280);
+        return const Color(0xFF64748B); // Gray
     }
   }
 }

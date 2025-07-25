@@ -3,7 +3,7 @@ class AppConstants {
   static const String appName = 'Parent Portal';
   
   // API endpoints
-  static const String baseUrl = 'https://api.parentportal.com';
+  static const String baseUrl = 'https://zawadi-project.onrender.com';
   static const String gradesEndpoint = '/grades';
   static const String feedbackEndpoint = '/feedback';
   static const String notificationsEndpoint = '/notifications';

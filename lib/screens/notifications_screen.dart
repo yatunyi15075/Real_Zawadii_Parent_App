@@ -1,299 +1,338 @@
 // screens/notifications_screen.dart
 import 'package:flutter/material.dart';
-import '../models/notification.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/nav_bar.dart';
-import '../screens/settings_screen.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Sample data with enhanced notification items
-    final notifications = [
-      NotificationItem(
-        title: 'School closure today',
-        timeAgo: '2h ago',
-        isRead: false,
-        icon: Icons.warning_amber_rounded,
-      ),
-      NotificationItem(
-        title: 'Parent-Teacher Conference',
-        timeAgo: '4h ago',
-        isRead: true,
-        icon: Icons.event_outlined,
-      ),
-      NotificationItem(
-        title: 'New announcement from Principal',
-        timeAgo: '5h ago',
-        isRead: true,
-        icon: Icons.campaign_outlined,
-      ),
-      NotificationItem(
-        title: 'Winter break starts next week',
-        timeAgo: '6h ago',
-        isRead: true,
-        icon: Icons.ac_unit_outlined,
-      ),
-      NotificationItem(
-        title: 'Parent-Teacher Conference',
-        timeAgo: '8h ago',
-        isRead: true,
-        icon: Icons.event_outlined,
-      ),
-      NotificationItem(
-        title: 'Assignment deadline reminder',
-        timeAgo: '1d ago',
-        isRead: true,
-        icon: Icons.assignment_outlined,
-      ),
-    ];
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
 
-    final unreadCount = notifications.where((n) => !n.isRead).length;
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  List<Map<String, dynamic>> notifications = [];
+  bool isLoading = false;
+  String? errorMessage;
+  
+  static const String baseUrl = 'https://zawadi-project.onrender.com';
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Modern Header
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x0A000000),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Notifications',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0F172A),
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          if (unreadCount > 0) ...[
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '$unreadCount new',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.settings_outlined,
-                            color: Color(0xFF64748B),
-                            size: 22,
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SettingsScreen(),
-                              ),
-                            );
-                          },
-                          tooltip: 'Settings',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Notifications List
-            Expanded(
-              child: notifications.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: notifications.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final notification = notifications[index];
-                        return _buildNotificationCard(notification);
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: const NavBar(currentIndex: 3),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
   }
 
-  Widget _buildNotificationCard(NotificationItem notification) {
-    Color iconColor;
-    Color iconBgColor;
-    
-    // Dynamic color based on notification type
-    switch (notification.icon) {
-      case Icons.warning_amber_rounded:
-        iconColor = const Color(0xFFF59E0B);
-        iconBgColor = const Color(0xFFFEF3C7);
-        break;
-      case Icons.event_outlined:
-        iconColor = const Color(0xFF3B82F6);
-        iconBgColor = const Color(0xFFDBEAFE);
-        break;
-      case Icons.campaign_outlined:
-        iconColor = const Color(0xFF8B5CF6);
-        iconBgColor = const Color(0xFFEDE9FE);
-        break;
-      case Icons.ac_unit_outlined:
-        iconColor = const Color(0xFF06B6D4);
-        iconBgColor = const Color(0xFFCFFAFE);
-        break;
-      case Icons.assignment_outlined:
-        iconColor = const Color(0xFF10B981);
-        iconBgColor = const Color(0xFFD1FAE5);
-        break;
-      default:
-        iconColor = const Color(0xFF6B7280);
-        iconBgColor = const Color(0xFFF3F4F6);
-    }
+  // Get stored authentication token (same as assessments)
+  Future<String?> _getAuthToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
+  }
 
+  // Load notifications from API (following assessments pattern)
+  Future<void> _loadNotifications() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final token = await _getAuthToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/announcements'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        
+        setState(() {
+          notifications = data.map((item) => {
+            'id': item['id'],
+            'title': item['announcement'] ?? 'No announcement',
+            'section': item['section'] ?? 'General',
+            'createdAt': item['createdAt'] != null 
+                ? DateTime.parse(item['createdAt']) 
+                : DateTime.now(),
+            'school_id': item['school_id'],
+            'timeAgo': _formatTimeAgo(item['createdAt']),
+            'icon': _getIconForSection(item['section']),
+          }).toList();
+          
+          // Sort by date (newest first)
+          notifications.sort((a, b) => 
+            (b['createdAt'] as DateTime).compareTo(a['createdAt'] as DateTime));
+          
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load notifications: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error loading notifications: ${e.toString()}';
+        isLoading = false;
+        notifications = [];
+      });
+    }
+  }
+
+  String _formatTimeAgo(String? dateString) {
+    if (dateString == null) return 'No date';
+    
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'No date';
+    }
+  }
+
+  IconData _getIconForSection(String? section) {
+    switch (section?.toLowerCase()) {
+      case 'all parents':
+        return Icons.campaign_outlined;
+      case 'early years':
+        return Icons.child_care_outlined;
+      case 'middle school':
+        return Icons.school_outlined;
+      case 'junior secondary':
+        return Icons.school_outlined;
+      default:
+        return Icons.notifications_outlined;
+    }
+  }
+
+  Color _getSectionColor(String? section) {
+    switch (section?.toLowerCase()) {
+      case 'all parents':
+        return const Color(0xFF6366F1); // Purple
+      case 'early years':
+        return const Color(0xFF10B981); // Green
+      case 'middle school':
+        return const Color(0xFF3B82F6); // Blue
+      case 'junior secondary':
+        return const Color(0xFFF59E0B); // Orange
+      default:
+        return const Color(0xFF6B7280); // Gray
+    }
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'N/A';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  // Refresh notifications
+  Future<void> _refreshNotifications() async {
+    await _loadNotifications();
+  }
+
+  Widget _buildNotificationCard(Map<String, dynamic> notification) {
+    final String title = notification['title']?.toString() ?? 'No announcement';
+    final String section = notification['section']?.toString() ?? 'General';
+    final String timeAgo = notification['timeAgo']?.toString() ?? 'No date';
+    final DateTime date = notification['createdAt'] as DateTime? ?? DateTime.now();
+    final IconData icon = notification['icon'] as IconData? ?? Icons.notifications_outlined;
+    
+    final sectionColor = _getSectionColor(section);
+    
     return Container(
+      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: notification.isRead 
-              ? Colors.transparent 
-              : const Color(0xFFEF4444).withOpacity(0.2),
-          width: 1,
-        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000000).withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            // Handle notification tap
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                // Icon Container
                 Container(
-                  width: 48,
-                  height: 48,
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: iconBgColor,
+                    color: sectionColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    notification.icon,
-                    color: iconColor,
+                    icon,
+                    color: sectionColor,
                     size: 24,
                   ),
                 ),
                 const SizedBox(width: 16),
-                
-                // Content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              notification.title,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: notification.isRead 
-                                    ? FontWeight.w500 
-                                    : FontWeight.w600,
-                                color: const Color(0xFF0F172A),
-                                height: 1.3,
-                              ),
-                            ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: sectionColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          section,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: sectionColor,
                           ),
-                          if (!notification.isRead)
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFEF4444),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text(
-                        notification.timeAgo,
+                        title,
                         style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF64748B),
-                          fontWeight: FontWeight.w400,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937),
                         ),
                       ),
                     ],
                   ),
                 ),
-                
-                // Action Button
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    color: const Color(0xFF94A3B8),
-                    size: 18,
-                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: const Color(0xFF9CA3AF),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      timeAgo,
+                      style: const TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 14,
+                      color: const Color(0xFF9CA3AF),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatDate(date),
+                      style: const TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(32.0),
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 48,
+                color: const Color(0xFFEF4444),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Something went wrong',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF374151),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage ?? 'Unable to load notifications',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF9CA3AF),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _refreshNotifications,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6366F1),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Try Again'),
+            ),
+          ],
         ),
       ),
     );
@@ -301,43 +340,88 @@ class NotificationsScreen extends StatelessWidget {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(20),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Icons.notifications_outlined,
+                size: 48,
+                color: const Color(0xFF9CA3AF),
+              ),
             ),
-            child: const Icon(
-              Icons.notifications_none_outlined,
-              size: 40,
-              color: Color(0xFF94A3B8),
+            const SizedBox(height: 24),
+            const Text(
+              'No notifications',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF374151),
+              ),
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'You\'re all caught up! New announcements will appear here.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF9CA3AF),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text(
+          'Notifications',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'No notifications yet',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'When you receive notifications,\nthey\'ll appear here',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Color(0xFF64748B),
-              height: 1.4,
-            ),
+        ),
+        backgroundColor: const Color(0xFF6366F1),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshNotifications,
           ),
         ],
       ),
+      body: isLoading
+          ? _buildLoadingState()
+          : errorMessage != null
+              ? _buildErrorState()
+              : notifications.isEmpty
+                  ? _buildEmptyState()
+                  : RefreshIndicator(
+                      color: const Color(0xFF6366F1),
+                      onRefresh: _refreshNotifications,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(top: 16, bottom: 20),
+                        itemCount: notifications.length,
+                        itemBuilder: (context, index) {
+                          return _buildNotificationCard(notifications[index]);
+                        },
+                      ),
+                    ),
+      bottomNavigationBar: const NavBar(currentIndex: 2), // Adjust index as needed
     );
   }
 }
