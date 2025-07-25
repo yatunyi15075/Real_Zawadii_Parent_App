@@ -4,11 +4,11 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/grade.dart';
-import '../models/feedback.dart';
 import '../widgets/nav_bar.dart';
 import '../screens/settings_screen.dart';
 import '../screens/attendance_screen.dart';
 import '../screens/assignments_screen.dart';
+import '../screens/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,21 +19,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Grade> grades = [];
-  List<FeedbackItem> feedbacks = [];
-  List<Map<String, String>> comments = [];
   Map<String, dynamic> stats = {};
+  String userName = 'Student';
+  int notificationCount = 0;
   
-  // Individual loading states for each section
+  // Loading states
   bool isLoadingStats = true;
   bool isLoadingGrades = true;
-  bool isLoadingFeedbacks = true;
-  bool isLoadingComments = true;
+  bool isLoadingProfile = true;
+  bool isLoadingNotifications = true;
   
-  // Individual error states for each section
+  // Error states
   String statsError = '';
   String gradesError = '';
-  String feedbacksError = '';
-  String commentsError = '';
+  String profileError = '';
   
   String? authToken;
 
@@ -57,11 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    // Load all data sections independently
+    _fetchUserProfile();
     _fetchStats();
     _fetchGrades();
-    _fetchFeedbacks();
-    _fetchComments();
+    _fetchNotificationCount();
   }
 
   Map<String, String> _getAuthHeaders() {
@@ -69,6 +67,68 @@ class _HomeScreenState extends State<HomeScreen> {
       'Content-Type': 'application/json',
       if (authToken != null) 'Authorization': 'Bearer $authToken',
     };
+  }
+
+  Future<void> _fetchUserProfile() async {
+    setState(() {
+      isLoadingProfile = true;
+      profileError = '';
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('$API_BASE_URL/api/users/parent/profile'),
+        headers: _getAuthHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        setState(() {
+          userName = responseData['name'] ?? 'Student';
+          isLoadingProfile = false;
+        });
+      } else {
+        throw Exception('Failed to load profile: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching profile: $e');
+      setState(() {
+        profileError = 'Failed to load profile';
+        userName = 'Student';
+        isLoadingProfile = false;
+      });
+    }
+  }
+
+  Future<void> _fetchNotificationCount() async {
+    setState(() {
+      isLoadingNotifications = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('$API_BASE_URL/api/announcements'),
+        headers: _getAuthHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          notificationCount = data.length;
+          isLoadingNotifications = false;
+        });
+      } else {
+        setState(() {
+          notificationCount = 0;
+          isLoadingNotifications = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        notificationCount = 0;
+        isLoadingNotifications = false;
+      });
+    }
   }
 
   Future<void> _fetchGrades() async {
@@ -103,79 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         gradesError = 'Failed to load academic performance data';
         isLoadingGrades = false;
-      });
-    }
-  }
-
-  Future<void> _fetchFeedbacks() async {
-    setState(() {
-      isLoadingFeedbacks = true;
-      feedbacksError = '';
-    });
-
-    try {
-      final response = await http.get(
-        Uri.parse('$API_BASE_URL/api/feedbacks'),
-        headers: _getAuthHeaders(),
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['feedbacks'] ?? [];
-
-        setState(() {
-          feedbacks = data.map((item) => FeedbackItem(
-            subject: item['subject'] ?? 'Unknown Subject',
-            teacher: item['teacher'] ?? 'Unknown Teacher',
-            message: item['message'] ?? 'No message available',
-            imageUrl: item['imageUrl'] ?? 'assets/images/default.png',
-          )).toList();
-          isLoadingFeedbacks = false;
-        });
-      } else {
-        throw Exception('Failed to load feedbacks: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching feedbacks: $e');
-      setState(() {
-        feedbacksError = 'Failed to load teacher feedback';
-        isLoadingFeedbacks = false;
-      });
-    }
-  }
-
-  Future<void> _fetchComments() async {
-    setState(() {
-      isLoadingComments = true;
-      commentsError = '';
-    });
-
-    try {
-      final response = await http.get(
-        Uri.parse('$API_BASE_URL/api/comments'),
-        headers: _getAuthHeaders(),
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> data = responseData['comments'] ?? [];
-
-        setState(() {
-          comments = data.map((item) => {
-            'teacher': (item['teacher'] ?? 'Unknown Teacher').toString(),
-            'comment': (item['comment'] ?? 'No comment available').toString(),
-            'date': (item['date'] ?? 'Unknown date').toString(),
-          }).toList();
-          isLoadingComments = false;
-        });
-      } else {
-        throw Exception('Failed to load comments: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching comments: $e');
-      setState(() {
-        commentsError = 'Failed to load latest updates';
-        isLoadingComments = false;
       });
     }
   }
@@ -222,13 +209,77 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadData();
   }
 
-  // Build error state for individual sections
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
+  }
+
+  Widget _buildNotificationBell() {
+    return Stack(
+      children: [
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(),
+                ),
+              );
+            },
+          ),
+        ),
+        if (notificationCount > 0)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 20,
+                minHeight: 20,
+              ),
+              child: Text(
+                notificationCount > 99 ? '99+' : notificationCount.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildSectionError(String message, VoidCallback onRetry) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Colors.red.shade100,
           width: 1,
@@ -236,8 +287,8 @@ class _HomeScreenState extends State<HomeScreen> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -245,12 +296,12 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Icon(
             Icons.error_outline,
-            size: 40,
+            size: 32,
             color: Colors.red.shade400,
           ),
           const SizedBox(height: 12),
           Text(
-            'Something went wrong',
+            'Unable to load data',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -270,51 +321,38 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: onRetry,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: const Color(0xFF3B82F6),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Try Again'),
+            child: const Text('Retry'),
           ),
         ],
       ),
     );
   }
 
-  // Build loading state for individual sections
-  Widget _buildSectionLoading(String message) {
+  Widget _buildSectionLoading() {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+      child: const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+        ),
       ),
     );
   }
@@ -322,17 +360,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _refreshData,
-          color: const Color(0xFF2563EB),
+          color: const Color(0xFF3B82F6),
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // Enhanced App Bar
+              // Professional App Bar
               SliverAppBar(
-                expandedHeight: 150,
+                expandedHeight: 120,
                 floating: false,
                 pinned: true,
                 backgroundColor: Colors.transparent,
@@ -344,83 +382,49 @@ class _HomeScreenState extends State<HomeScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Color(0xFF2563EB),
                           Color(0xFF3B82F6),
-                          Color(0xFF60A5FA),
+                          Color(0xFF2563EB),
                         ],
                       ),
                       borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(32),
-                        bottomRight: Radius.circular(32),
+                        bottomLeft: Radius.circular(24),
+                        bottomRight: Radius.circular(24),
                       ),
                     ),
-                    child: Stack(
-                      children: [
-                        // Background pattern
-                        Positioned(
-                          top: -50,
-                          right: -50,
-                          child: Container(
-                            width: 200,
-                            height: 200,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.1),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 40, 80, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            '${_getGreeting()}!',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                        Positioned(
-                          top: 40,
-                          right: 20,
-                          child: Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.05),
+                          const SizedBox(height: 4),
+                          Text(
+                            isLoadingProfile ? 'Loading...' : userName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        // Content
-                        Positioned(
-                          left: 24,
-                          right: 80,
-                          bottom: 24,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Good Morning!',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Academic Journey',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.5,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 actions: [
+                  _buildNotificationBell(),
                   Container(
-                    margin: const EdgeInsets.only(right: 20, top: 8),
+                    margin: const EdgeInsets.only(right: 20),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(16),
@@ -447,26 +451,25 @@ class _HomeScreenState extends State<HomeScreen> {
               // Content
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Quick Stats Cards
                       if (isLoadingStats)
-                        _buildSectionLoading('Loading your statistics...')
+                        _buildSectionLoading()
                       else if (statsError.isNotEmpty)
                         _buildSectionError(statsError, _fetchStats)
                       else
                         Container(
-                          padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.04),
-                                blurRadius: 20,
-                                offset: const Offset(0, 4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
@@ -482,13 +485,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     );
                                   },
-                                  child: _buildEnhancedStatCard(
-                                    'Attendance Rate',
+                                  child: _buildStatCard(
+                                    'Attendance',
                                     stats['attendance_rate'] ?? '0%',
                                     Icons.calendar_today_outlined,
                                     const Color(0xFF10B981),
-                                    const Color(0xFFD1FAE5),
-                                    stats['attendance_trend'] ?? 'No data',
+                                    true,
                                   ),
                                 ),
                               ),
@@ -507,13 +509,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     );
                                   },
-                                  child: _buildEnhancedStatCard(
+                                  child: _buildStatCard(
                                     'Assignments',
                                     '${stats['assignments_completed'] ?? '0'}/${stats['assignments_total'] ?? '0'}',
                                     Icons.assignment_outlined,
                                     const Color(0xFFF59E0B),
-                                    const Color(0xFFFEF3C7),
-                                    '${stats['assignments_pending'] ?? '0'} pending',
+                                    false,
                                   ),
                                 ),
                               ),
@@ -521,19 +522,38 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 32),
                       
-                      // CBC Learning Areas Performance
-                      _buildEnhancedSectionHeader(
-                        'Academic Performance',
-                        'CBC Learning Areas - Current Term',
-                        Icons.school_outlined,
-                        Colors.blue.shade600,
+                      // Academic Performance Section
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF3B82F6).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.school_outlined,
+                              color: Color(0xFF3B82F6),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Academic Performance',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       
                       if (isLoadingGrades)
-                        _buildSectionLoading('Loading academic performance...')
+                        _buildSectionLoading()
                       else if (gradesError.isNotEmpty)
                         _buildSectionError(gradesError, _fetchGrades)
                       else if (grades.isEmpty)
@@ -546,12 +566,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.04),
-                                blurRadius: 20,
-                                offset: const Offset(0, 4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
@@ -560,60 +580,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               int index = entry.key;
                               Grade grade = entry.value;
                               bool isLast = index == grades.length - 1;
-                              return _buildEnhancedGradeCard(grade, isLast);
+                              return _buildGradeCard(grade, isLast);
                             }).toList(),
                           ),
                         ),
                       
-                      const SizedBox(height: 40),
-                      
-                      // Recent Feedback
-                      _buildEnhancedSectionHeader(
-                        'Teacher Feedback',
-                        'Recent highlights from your teachers',
-                        Icons.star_outline,
-                        Colors.amber.shade600,
-                      ),
-                      const SizedBox(height: 20),
-                      
-                      if (isLoadingFeedbacks)
-                        _buildSectionLoading('Loading teacher feedback...')
-                      else if (feedbacksError.isNotEmpty)
-                        _buildSectionError(feedbacksError, _fetchFeedbacks)
-                      else if (feedbacks.isEmpty)
-                        _buildEmptyState(
-                          'No feedback available',
-                          'Teacher feedback will appear here once available.',
-                          Icons.star_outline,
-                        )
-                      else
-                        ...feedbacks.map((feedback) => _buildEnhancedFeedbackCard(feedback)).toList(),
-                      
-                      const SizedBox(height: 40),
-                      
-                      // Teacher Comments
-                      _buildEnhancedSectionHeader(
-                        'Latest Updates',
-                        'Comments and observations',
-                        Icons.chat_bubble_outline,
-                        Colors.purple.shade600,
-                      ),
-                      const SizedBox(height: 20),
-                      
-                      if (isLoadingComments)
-                        _buildSectionLoading('Loading latest updates...')
-                      else if (commentsError.isNotEmpty)
-                        _buildSectionError(commentsError, _fetchComments)
-                      else if (comments.isEmpty)
-                        _buildEmptyState(
-                          'No updates available',
-                          'Latest comments and updates will appear here.',
-                          Icons.chat_bubble_outline,
-                        )
-                      else
-                        ...comments.map((comment) => _buildEnhancedCommentCard(comment)).toList(),
-                      
-                      const SizedBox(height: 120), // Bottom padding for nav bar
+                      const SizedBox(height: 100), // Bottom padding for nav bar
                     ],
                   ),
                 ),
@@ -626,87 +598,34 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEmptyState(String title, String message, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: 48,
-            color: Colors.grey.shade400,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEnhancedStatCard(String title, String value, IconData icon, Color color, Color bgColor, String subtitle) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, bool isFirst) {
     return Container(
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(height: 12),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: Colors.black87,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1F2937),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               color: Colors.grey.shade600,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade500,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -715,48 +634,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEnhancedSectionHeader(String title, String subtitle, IconData icon, Color color) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEnhancedGradeCard(Grade grade, bool isLast) {
+  Widget _buildGradeCard(Grade grade, bool isLast) {
     Color getGradeColor(String gradeLevel) {
       switch (gradeLevel) {
         case 'Exceeding Expectations':
@@ -792,7 +670,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         border: isLast ? null : Border(
           bottom: BorderSide(
@@ -804,15 +682,15 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: getGradeColor(grade.grade).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               getSubjectIcon(grade.subject),
               color: getGradeColor(grade.grade),
-              size: 24,
+              size: 20,
             ),
           ),
           const SizedBox(width: 16),
@@ -823,28 +701,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   grade.subject,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: Color(0xFF1F2937),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   grade.teacher,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: getGradeColor(grade.grade).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: getGradeColor(grade.grade).withOpacity(0.3),
                 width: 1,
@@ -853,8 +730,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(
               _getShortGrade(grade.grade),
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
                 color: getGradeColor(grade.grade),
               ),
             ),
@@ -879,166 +756,44 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildEnhancedFeedbackCard(FeedbackItem feedback) {
+  Widget _buildEmptyState(String title, String message, IconData icon) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.amber.shade400,
-                  Colors.amber.shade600,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.star,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  feedback.subject,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  feedback.message,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'From ${feedback.teacher}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.arrow_forward_ios,
-            color: Colors.grey.shade400,
-            size: 16,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEnhancedCommentCard(Map<String, String> comment) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.purple.shade100,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.purple.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.chat_bubble,
-                  color: Colors.purple.shade600,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      comment['teacher'] ?? 'Unknown Teacher',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      comment['date'] ?? 'Unknown date',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Icon(
+            icon,
+            size: 40,
+            color: Colors.grey.shade400,
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.grey.shade100,
-                width: 1,
-              ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
             ),
-            child: Text(
-              comment['comment'] ?? 'No comment available',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-                height: 1.4,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
