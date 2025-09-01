@@ -1020,7 +1020,7 @@ Widget _buildEmptyState(String message) {
           ),
         ],
       ),
-      bottomNavigationBar: const NavBar(currentIndex: 1),
+      bottomNavigationBar: const NavBar(currentIndex: 2),
     );
   }
 }

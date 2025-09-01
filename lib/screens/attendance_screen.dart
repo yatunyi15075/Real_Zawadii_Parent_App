@@ -730,7 +730,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           ),
                         ),
                 ),
-      bottomNavigationBar: const NavBar(currentIndex: 2),
+      bottomNavigationBar: const NavBar(currentIndex: 3),
     );
   }
 }

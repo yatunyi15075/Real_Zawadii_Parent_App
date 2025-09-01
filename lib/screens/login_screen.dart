@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'home_screen.dart';
-
 
 // Email: demo@example.com
 // Password: demo123
-
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -32,6 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
   static const String DEMO_EMAIL = 'demo@example.com';
   static const String DEMO_PASSWORD = 'demo123';
 
+  // Administrator contact details
+  static const String ADMIN_PHONE = '+254794203261';
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -53,9 +54,141 @@ class _LoginScreenState extends State<LoginScreen> {
     // Show success message
     _showSuccessSnackBar('Demo login successful!');
 
-    // Navigate to home screen
-    Navigator.of(context).pushReplacement(
+    // Navigate to home screen and remove all previous routes
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _makePhoneCall() async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: ADMIN_PHONE);
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        _showErrorDialog('Could not open phone app. Please call $ADMIN_PHONE manually.');
+      }
+    } catch (e) {
+      _showErrorDialog('Could not open phone app. Please call $ADMIN_PHONE manually.');
+    }
+  }
+
+  Future<void> _openWhatsApp() async {
+    final String message = Uri.encodeComponent(
+      'Hello, I need help with password reset.\n\n'
+      'School Name: [Please enter your school name]\n'
+      'Email: [Please enter your email address]\n\n'
+      'Please help me reset my password.'
+    );
+    
+    final Uri whatsappUri = Uri.parse('https://wa.me/$ADMIN_PHONE?text=$message');
+    
+    try {
+      if (await canLaunchUrl(whatsappUri)) {
+        await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+      } else {
+        _showErrorDialog('Could not open WhatsApp. Please install WhatsApp or contact $ADMIN_PHONE directly.');
+      }
+    } catch (e) {
+      _showErrorDialog('Could not open WhatsApp. Please install WhatsApp or contact $ADMIN_PHONE directly.');
+    }
+  }
+
+  void _showContactAdministratorDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.contact_support, color: Colors.blue.shade600),
+              const SizedBox(width: 8),
+              const Text('Contact Administrator'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Need help with your password? Contact the administrator:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 16),
+              
+              // Important note
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange.shade600, size: 16),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Before contacting:',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      '• Include your school name\n'
+                      '• Include your email address\n'
+                      '• I will respond within a few minutes',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              Text(
+                'Administrator: $ADMIN_PHONE',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _makePhoneCall();
+              },
+              icon: const Icon(Icons.phone, color: Colors.green),
+              label: const Text(
+                'Call',
+                style: TextStyle(color: Colors.green),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _openWhatsApp();
+              },
+              icon: Icon(Icons.message, color: Colors.green.shade600),
+              label: Text(
+                'WhatsApp',
+                style: TextStyle(color: Colors.green.shade600),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -108,9 +241,10 @@ class _LoginScreenState extends State<LoginScreen> {
             // Show success message
             _showSuccessSnackBar('Logged in successfully!');
 
-            // Navigate to home screen
-            Navigator.of(context).pushReplacement(
+            // Navigate to home screen and remove all previous routes
+            Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (_) => const HomeScreen()),
+              (route) => false,
             );
           } else {
             // Handle error response
@@ -344,26 +478,7 @@ class _LoginScreenState extends State<LoginScreen> {
               
               const SizedBox(height: 24),
               TextButton(
-                onPressed: () {
-                  // Handle forgot password
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: const Text('Forgot Password'),
-                        content: const Text(
-                          'Please contact your school administrator to reset your password.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('OK'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
+                onPressed: _showContactAdministratorDialog,
                 child: Text(
                   'Forgot Password?',
                   style: TextStyle(
@@ -379,4 +494,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

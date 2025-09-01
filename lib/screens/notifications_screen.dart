@@ -421,7 +421,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         },
                       ),
                     ),
-      bottomNavigationBar: const NavBar(currentIndex: 2), // Adjust index as needed
+      bottomNavigationBar: const NavBar(currentIndex: 4), // Adjust index as needed
     );
   }
 }

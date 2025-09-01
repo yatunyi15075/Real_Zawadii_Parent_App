@@ -8,21 +8,21 @@ class AppTheme {
       scaffoldBackgroundColor: Colors.white,
       fontFamily: 'Poppins',
       textTheme: const TextTheme(
-        headline1: TextStyle(
+        headlineLarge: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: Colors.black,
         ),
-        headline2: TextStyle(
+        headlineMedium: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.black,
         ),
-        bodyText1: TextStyle(
+        bodyLarge: TextStyle(
           fontSize: 16,
           color: Colors.black87,
         ),
-        bodyText2: TextStyle(
+        bodyMedium: TextStyle(
           fontSize: 14,
           color: Colors.black54,
         ),

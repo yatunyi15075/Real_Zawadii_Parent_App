@@ -11,11 +11,14 @@ import '../screens/assignments_screen.dart';
 import '../screens/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String? studentName;
+
+  const HomeScreen({super.key, this.studentName});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Grade> grades = [];
@@ -42,7 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeAndLoadData();
+    if (widget.studentName != null) {
+      // Use student name passed from switcher
+      userName = widget.studentName!;
+      isLoadingProfile = false; // don’t fetch profile if name provided
+    } else {
+      _initializeAndLoadData();
+    }
   }
 
   Future<void> _initializeAndLoadData() async {

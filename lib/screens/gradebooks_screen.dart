@@ -801,7 +801,8 @@ class _GradebooksScreenState extends State<GradebooksScreen> {
                     ],
                   ),
                 ),
-      bottomNavigationBar: const NavBar(currentIndex: 3), // Adjust index as needed
+      bottomNavigationBar: const NavBar(currentIndex: 1), // Adjust index as needed
     );
   }
 }
+
